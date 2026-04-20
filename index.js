@@ -196,8 +196,13 @@ app.delete('/api/profiles/:id', async (req, res) => {
 let dbReady = false;
 app.use(async (req, res, next) => {
   if (!dbReady) {
-    await db.init();
-    dbReady = true;
+    try {
+      await db.init();
+      dbReady = true;
+    } catch (e) {
+      console.error('DB init failed:', e.message);
+      return res.status(500).json(err('Database connection failed: ' + e.message));
+    }
   }
   next();
 });
