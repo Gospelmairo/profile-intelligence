@@ -192,12 +192,20 @@ app.delete('/api/profiles/:id', async (req, res) => {
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-async function start() {
-  await db.init();
-  app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+// ── DB init (lazy, runs once per cold start) ──────────────────────────────────
+let dbReady = false;
+app.use(async (req, res, next) => {
+  if (!dbReady) {
+    await db.init();
+    dbReady = true;
+  }
+  next();
+});
+
+// ── Start (local only) ────────────────────────────────────────────────────────
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  db.init().then(() => app.listen(PORT, () => console.log(`Listening on ${PORT}`))).catch(e => { console.error(e); process.exit(1); });
 }
-start().catch(e => { console.error(e); process.exit(1); });
 
 module.exports = app;
